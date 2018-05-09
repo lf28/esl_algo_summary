@@ -1,0 +1,275 @@
+\documentclass[runningheads,a4paper]{llncs}
+
+\usepackage[utf8]{inputenc}
+%\newcounter{problem}
+%\newcounter{solution}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{physics}
+
+
+
+%\usepackage{amsmath}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+\usepackage{algpseudocode}
+%\bibliographystyle{IEEEtran}
+
+
+% \newcommand\Problem{%
+%   \stepcounter{problem}%
+%   \textbf{\theproblem.}~%
+%   \setcounter{solution}{0}%
+% }
+
+% \newcommand\TheSolution{%
+%   \textbf{Solution:}\\%
+% }
+% 
+% \newcommand\ASolution{%
+%   \stepcounter{solution}%
+%   \textbf{Solution \thesolution:}\\%
+% }
+
+
+\newcommand{\E}[1]{\ensuremath{\mathbb{E}\left[#1\right]}}
+\newcommand{\EE}[2]{\ensuremath{\mathbb{E}_{#1}\left[#2\right]}}
+\newcommand{\ee}[1]{\ensuremath{\mathbb{E}#1}}
+
+\newcommand{\Var}[1]{\mathrm{Var}[#1]}
+\newcommand{\Cov}[2]{\mathrm{Cov}[#1,#2]}
+\newcommand{\Cor}[2]{\mathrm{Cor}[#1,#2]}
+\newcommand{\vv}[1]{\boldsymbol{#1}}
+
+%\theoremstyle{remark}
+%\newtheorem{example}{Example}
+%\newtheorem*{remarks}{Remark}
+% \parindent 0in
+% \parskip 1em
+
+\spnewtheorem*{solution0}{Solution}{\itshape}{\itshape}
+\spnewtheorem{example0}{Example}{\itshape}{\itshape}
+
+%\usepackage{natbib}
+\bibliographystyle{splncs03}
+
+\setcounter{tocdepth}{2}
+\usepackage{graphicx}
+\usepackage{bm}
+%\usepackage[french]{babel} % Pour adopter les règles de typographie française
+\usepackage[T1]{fontenc} % Pour que les lettres accentuées soient reconnues
+
+
+\usepackage{url}
+\urldef{\mailsa}\path|{alfred.hofmann, ursula.barth, ingrid.haas, frank.holzwarth,|
+\urldef{\mailsb}\path|anna.kramer, leonie.kunz, christine.reiss, nicole.sator,|
+\urldef{\mailsc}\path|erika.siebert-cole, peter.strasser, lncs}@springer.com|    
+\newcommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}
+
+
+\author{Lei Fang}
+\begin{document}
+
+\mainmatter 
+
+\title{A Summary of Machine Learning Algorithms in Elements of Statistical Learning}
+
+\titlerunning{A Summary of ESL}
+\author{Dr. Lei Fang}
+
+\institute{University of St Andrews}
+
+\authorrunning{Dr. Lei Fang}
+
+\toctitle{Abstract}
+\tocauthor{{}}
+
+
+
+\maketitle
+\begin{abstract}
+This article summarises the techniques discussed in the seminal book Elements of Statistical Learning (ESL)~\cite{Hastie_2009}. A wide range of algorithms and techniques are presented in the book roughly following the order of each chapter's topic. Therefore, a summary of all the techniques provides another way to summarize the book. The summary also provides a quick reference for readers to compare and choose the appropriate techniques for their application. 
+\end{abstract}
+
+
+\medskip
+
+\begingroup
+\let\clearpage\relax
+\tableofcontents
+%\addcontentsline{toc}{section}{Introduction}
+\endgroup
+
+\medskip
+\medskip
+	
+%\section{Introduction}
+
+
+
+\section{Introduction} % (fold)
+\label{sec:introduction}
+The ESL book, consisting of 18 chapters in total, has covered a very wide range of statistical learning techniques at various depth. The presentation of these techniques are scattered in the 18 chapters based on the main theme of each chapter. For example, Chapter 4 is devoted to linear methods for classification, Chapter 6 focuses on kernel smoothing methods and its application in density estimation, while Chapter 8 and 14 talks mainly about general model inference algorithm and unsupervised learning algorithms. And some techniques are repetitively mentioned at various places in the book. Take mixture model as an example: it is first introduced in Chapter 4 as a classifier, namely Linear/Quadratic Discriminant Analysis (LDA, QDA), then in Chapter Six for its application in density estimation, and Chapter 8 as a vehicle model to introduce EM algorithm and Gibbs sampling, and Chapter 14 as a clustering model (K-means). These techniques, although widely known by their own names for various different applications, actually share the same statistical model behind the scene. This article aims to link those techniques mentioned in the book together by tracing back to their original model. We believe this is the best way to compare and contrast the different techniques; and therefore gives a better insight of these techniques. 
+
+
+For each technique, we first present, if possible, the \textit{de fecto} statistical model behind the scene. Apart from it, we also list the following aspects of the algorithm.
+\begin{itemize}
+     \item Optimization perspective: as many ML technique can be rephrased as an optimization problem, we therefore list its optimization equivalence; 
+     \item Model learning algorithm: known as model estimation from statistics community, according to Wasserman~\cite{wasserman2013all};
+     \item (Closed-form) solution of the model: also known as estimator from the statistics perspective; if possible, the sampling distribution of the estimator is also presented.
+     \item Regularization: how the model can be regularized to strike the variance-bias trade-off;
+     \item Regression surface/Decision boundary: this criteria helps visually understand what the final model looks like in the original feature space; for classification problem, it is the decision boundary of the classifiers. 
+ \end{itemize} 
+
+\subsection{Regression Model} % (fold)
+\label{sub:linear_regression_as_an_example}
+A general regression problem can be collectively modelled as follows: assume data features $X_i$ are fixed (i.e. not random), while the response variables $Y_i$ are generated as some unknown transformation $f$ of $X_i$ plus some random disturbance $\varepsilon_i$:  
+\begin{equation}
+    Y_i = f(X_i) + \varepsilon_i,
+\end{equation} where $\vec{\varepsilon}$ follows some probability distribution $P(\vec{\varepsilon}).$ Usually, we assume $\varepsilon_i$ are i.i.d samples from a zero-mean Gaussian with some constant variance, $\sigma^2$, i.e. \[\varepsilon_i \stackrel{iid}{\sim}\mathcal{N}(0, \sigma^2).\] The response variables $\vec{Y} = \{Y_1, \ldots, Y_n\}$ then becomes a random vector with a multivariate Gaussian likelihood (induced by $\vec{\varepsilon}$) with mean and variance \[\E{\vec{Y}|\vec{X}} = {f}(\vec{X}) = [f(X_1), \ldots, f(X_n)]', \Var{\vec{Y}|\vec{X}} = \sigma^2\vec{I} \] respectively.
+Therefore, the log likelihood of this regression model becomes \begin{align*}
+    \log P(\vec{Y}| f, \sigma^2, \vec{X})& = \log \mathcal{N} (\vec{Y}; f(X), \sigma^2\vec{I}) = \sum_{i=1}^n \log \mathcal{N}( Y_i; f(X_i), \sigma^2) \\ & = -\frac{n}{2} \log 2\pi -n\log\sigma - \frac{1}{2\sigma^2}\underbracket{\sum_{i=1}^n (Y_i - f(X_i))^2}_{\text{squared error loss}}.
+\end{align*} Note that the likelihood actually defines a squared error loss function with respect to $f$, assuming $\sigma^2$ is known. And the squared error loss function is \[L(f) = \sum_{i=1}^n (Y_i - f(X_i))^2.\] In fact, in most statistical models, likelihood function serves the same purpose as a loss function, and both of them measures some distance between the assumed model and the observed data. In this case, the loss function simply measures the squared euclidean distance between $n$-dimensional vectors $\vec{Y}$ and $f(\vec{X})$, which is also the kernel of a (spherical) Gaussian distribution. Based on the distance measure, we obtain the optimized solution w.r.t the loss function and likelihood function: \begin{align}
+    f_{ML} =\arg\max_{f} \log P(\vec{Y}| f, \sigma^2, \vec{X});\;\; f_{loss} =\arg\max_{f} L(f)
+\end{align}
+
+\paragraph{the model for linear regression} % (fold)
+\label{ssub:the_statistical_model}
+Linear regression is a specific case of the general regression model with the additional assumption on $f$: it assumes 
+\begin{align}
+    f(X_i) = \beta_0 +\beta_1 X_{i,1} +\ldots + \beta_p X_{i,p} = \vec{\beta}^{T}{X},
+\end{align} then $f$ is uniquely defined by its parameter $\vec{\beta}$.
+Plugging the definition of $f$ into the loss and likelihood function, we obtain the corresponding functions for the linear regression model. The closed form solution to the loss function and likelihood are called least squared estimator and maximum likelihood estimator: \[\hat{\vec{\beta}}  = (\vec{XX}^{T})^{-1} \vec{X}\vec{Y}.\]
+
+% subsubsection the_statistical_model (end)
+
+
+% subsection linear_regression_as_an_example (end)
+% section introduction (end)
+
+% section a_summary_of_technique (end)
+
+% \section{Chapter 7 Model Assessment and Selection}
+
+% \subsection{Bias decomposition of ridge regression estimator, i.e. eq (7.14) of ESL}
+
+% Recall the definition of $\beta_*$ as per eq. (7.13), 
+% \begin{equation*}
+% 	\beta_{*} = \argmin_{\beta}{\E{(f(X) - X^{T}\beta)^2}},
+% \end{equation*} 
+% where the expectation is taken w.r.t. the marginal distribution of the input variable X, $P(X)$. Eq. (7.14) claims that 
+% \[\EE{x_0}{f(x_0) - \ee{\hat{f}_\alpha (x_0)}}^2 =\EE{x_0}{f(x_0) - x_0^T\beta_{*}}^2 + \EE{x_0}{ x_0^T\beta_{*} - \ee{\hat{f}_\alpha (x_0)}}^2.\]
+
+% From eq. (7.13), we can derive the theoretical estimator for $\beta_*$, which is called best linear estimator:
+% \begin{align*}
+%     g(\beta) &=\E{(f(X) - X^{T}\beta)^2} = \E{f^2(X)} - 2\beta^{T} \E{Xf(X)} + \beta^{T} \E{XX^{T}}\beta \\
+%     \Rightarrow \pdv{g}{\beta} &= -2 \E{Xf(X)} + 2 \E{XX^T}\beta = 0 \\
+%     \Rightarrow \beta_{*} &= \E{XX^T}^{-1}\E{Xf(X)},
+% \end{align*} where we have assumed $\E{XX^T}$ is invertible. 
+
+  
+
+% The L.H.S of (7.14) can be expanded as: 
+% \begin{align*}
+% 	\EE{x_0}{f(x_0) - \ee{\hat{f}_\alpha (x_0)}}^2 &= \EE{x_0}{f(x_0) -x_0^T\beta_{*}+ x_0^T\beta_{*} - \ee{\hat{f}_\alpha (x_0)}}^2 \\
+% 	&= \EE{x_0}{f(x_0) - x_0^T\beta_{*}}^2 + \EE{x_0}{ x_0^T\beta_{*} - \ee{\hat{f}_\alpha (x_0)}}^2 \\ &\;\;+ 2 \EE{x_0}{(f(x_0) - x_0^T\beta_{*})(x_0^T\beta_{*}-\ee{\hat{f}_\alpha (x_0)})} 
+% \end{align*}
+
+% To show (7.14), one only needs to show the third term is zero, i.e. 
+% \[\EE{x_0}{(f(x_0) - x_0^T\beta_{*})(x_0^T\beta_{*}-\ee{\hat{f}_\alpha (x_0)})}  =0, \]
+
+% where the L.H.S equals
+% \begin{align*}
+%   \mathit{LHS} =  \EE{x_0}{(f(x_0) - x_0^T\beta_{*})x_0^T\beta_{*}} - \EE{x_0}{(f(x_0) - x_0^T\beta_{*})\ee{\hat{f}_\alpha (x_0)})} 
+% \end{align*}
+
+
+% The first term (for convenience, we have omitted $x_0$ and replace it with $x$):   \begin{align}
+%     &\E{(f(x) - x^T\beta_{*})x^T\beta_{*}} = \E{f(x)x^T\beta_*}- \E{(x^T\beta_*)^2} \\
+%     &= \E{f(x)x^T}\beta_* - \left(\Var{(x^T\beta_*)} + (\E{(x^T\beta_*)})^2\right) \\
+%     &= \E{f(x)x^T}\beta_* - \left( \beta_*^T \Var{x} \beta_* + (\beta_* ^T \E{x})^2\right) \\
+%     & = \E{f(x)x^T}\beta_* - \left( \beta_*^T (\E{xx^T} - \E{x}\E{x}^T) \beta_* + (\beta_* ^T \E{x})^2\right)  \\
+%     & = \E{f(x)x^T}\beta_* -  \E{f(x)x^T}\E{xx^T}^{-1} \E{xx^T}\beta_*  + \beta_*^T\E{x}\E{x}^T \beta_*\\  &\;\;- \beta_*^T\E{x}\E{x}^T \beta_* \\
+%     &= 0,
+% \end{align} where we have used the variance identity $\Var{z} = \E{zz^T} - \E{z}\E{z}^T$ for the second and forth lines; and all the other steps follow due to standard expectation properties, like the linearity. In particular, $\beta_*$ is a constant vector w.r.t the expectation, as it is independent from where $x$ ($x_0$) is measured.
+
+
+
+% The second term \begin{align}
+%     \E{(f(x) - x^T\beta_{*})\ee{\hat{f}_\alpha (x)})} &= \E{(f(x) - x^T\beta_{*}) \ee{x^T\hat{\beta}_\alpha}} \\
+%     &= \E{\E{\hat{\beta}_\alpha}^Tx (f(x) - x^T\beta_{*})} \\
+%     &= \E{\hat{\beta}_\alpha}^T\E{x (f(x) - x^T\beta_{*})} \\
+%     &= \E{\hat{\beta}_\alpha}^T\E{x f(x) - x x^T\beta_*} \\
+%     &= \E{\hat{\beta}_\alpha}^T\left( \E{x f(x)} - \E{xx^T} \E{xx^T}^{-1}\E{xf(x)}\right)\\
+%     &=0,
+% \end{align}
+% where the second equality holds because $\ee{\hat{f}_\alpha (x)}$ is a point-wise expectation where the randomness arises from the training data $y$, so $x$ is fixed; the third equality holds as $\E{\hat{\beta}_\alpha}$ is independent from where $x$ ($x_0$) is predicted. 
+% Combining the above results, the sum of these two terms is zero, which shows eq.(7.14). 
+
+% Finally, it is worth noting that $ f(X) = \E{Y|X}$, i.e. $f(X)$ is the optimal regression function, as 
+% \[ f(X) = \E{f(X) +\varepsilon |X}  = \E{Y|X}.\] Therefore, \begin{align}
+%     \beta_{*} &= \E{XX^T}^{-1}\E{Xf(X)}  = \E{XX^T}^{-1}\E{X\E{Y|X}} \\
+%     &= \E{XX^T}^{-1}\E{\E{XY|X}} \\
+%     &= \E{XX^T}^{-1}\E{XY},
+% \end{align} which basically tell us, using the optimal regression function $f(x)$ or the noisy version, $y$,  as the reference to minimise the expected error is the same as far as the point estimator is the concern. Of course, the estimator with $f$ will have better property/efficiency as it will lead to smaller variance, which can be easily induced from the estimator. 
+
+
+% %  \section{Bias and efficiency}  The maximum likelihood estimator of variance
+% % for a i.i.d Gaussian model is $\sigma^2_{ML} = \frac{1}{N} \sum_{i=1}^{N}
+% % (x_i- \mu_{ML})^2$. We need to show this estimator is biased. Before we dive
+% % into the proof, the following basic concepts are needed.
+% % \begin{itemize} \item An estimator is a function of data, which estimates a
+% % parameter of a random variable's distribution (say, mean or variance);
+% % therefore, an estimator can be denoted as $\hat{\theta} = \phi(\vv{x})$.
+% % \item An estimator can either be a random variable itself or a fixed quantity
+% % depending on the context. If the estimator is considered as a function of a
+% % random variable $x$, the estimator is a random variable. If we are considering
+% % a particular dataset, it is then a fixed quantity. e.g. $\mu_{ML} =
+% % \frac{1}{N} \sum x_i$ is an estimator, itself is a random variable if $x_i$ is
+% % treated as a random variable.
+% %  \item An estimator is \textbf{unbiased} if $\E{\hat{\theta}} = \theta$, where
+% % $\theta$ is the true parameter of the distribution. e.g. $\mu_{ML}$ is a
+% % unbiased estimator, as \[\E{\mu_{ML}} = \E{\frac{1}{N} \sum x_i} = \frac{1}{N}
+% % \sum \E{x_i} =\mu;\] note in this case, $x_i$ is treated as a random variable
+% % rather than a fixed observation.
+% % \end{itemize}  Now we are going to see why $\sigma^2_{ML}$ is biased in an
+% % intuitive way.
+% %  \Problem First, suppose we knew the true mean of the Gaussian, i.e. $\mu$,
+% % show that the following estimator for variance $\sigma^2= \Var{x}$
+% % \[\sigma_{\mu}^2 = \frac{1}{N} \sum (x_i - \mu)^2 \]is unbiased.\footnote{It
+% % is actually an application of Monte Carlo method; where we take sample mean of
+% % random samples as the estimator of the interest: the random samples $x_i$ are
+% % transformed to $(x_i-\mu)^2$ first (as $\Var{x} = \E{(x-\E{x})^2}$); their
+% % sample mean is bound to be an unbiased estimator due to Monte Carlo theory. } 
+% % \Problem Second, show the sum of squared errors $SSE(\theta) = \sum (x_i-
+% % \theta)^2$ is minimized when $\theta = \mu_{ML}$. Why?  \Problem Based on the
+% % above two results, we always have $\sigma^2_{ML} \leq \sigma^2$; i.e.
+% % $\sigma_{ML}^2$ is biased.
+% %  \Problem $\star$ Understanding maths problem geometrically is usually the
+% % most intuitive way. Give a geometric interpretation over this biased
+% % estimation problem. Can you give geometric interpretation over the
+% % optimization problem in question 3 as well (i.e. show why there is a unique
+% % global maxima rather than a local maxima).
+% %  Now, we are going to see how much the bias actually is by a formal proof.
+% %  \Problem Optional: show $\E{\sigma^2_{ML}} = \frac{N-1}{N} \sigma^2$ hint: as
+% % $\mu_{ML}$ itself is a r.v. we can have the following identity:
+% % \[\E{\mu_{ML} ^2} = \E{\mu_{ML}}^2 + \Var{\mu_{ML}}  .\]
+
+
+% % \section{MAP estimation and Bayesian inference}  \Problem What is maximum
+% % posterior MAP estimation? What is its relationship with ML estimation? Use
+% % i.i.d Gaussian as an example.
+% %   \Problem Can you explain why least square error estimation, i.e. minimising
+% % $\sum(y_i - f(\vv{w}, x_i))^2$ with respect to $\vv{w}$, works for regression?
+% % Use probability model to support your claim.
+% %   \Problem Why ridge regression works? Is there any formal reasoning behind it
+% % ? Again, explain it with a probability model.
+
+
+\bibliography{references}
+%\nocite{*} 
+\end{document}
